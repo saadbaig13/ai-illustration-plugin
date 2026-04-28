@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { overflow: hidden; }
+
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 13px;
+    }
+
+    /* ── Layout ── */
+    #appWrapper {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    #mainPanel {
+      width: 360px;
+      flex-shrink: 0;
+      padding: 20px;
+    }
+
+    /* ── Remix panel ── */
+    #remixPanel {
+      width: 220px;
+      flex-shrink: 0;
+      border-left: 1px solid #f0f0f0;
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    #remixPanel.open { display: flex; }
+
+    .remix-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .remix-panel-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #aaa;
+    }
+
+    #closeRemixBtn {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 15px;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      line-height: 1;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    #closeRemixBtn:hover { background: #f0f0f0; color: #1a1a1a; }
+
+    #remixSourceImg {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 7px;
+      border: 1.5px solid #ebebeb;
+      display: block;
+    }
+
+    .remix-strength-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+
+    #strengthValue {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      min-width: 14px;
+      text-align: right;
+    }
+
+    #strengthSlider {
+      width: 100%;
+      accent-color: #1a1a1a;
+      cursor: pointer;
+      height: 4px;
+    }
+
+    #remixBtn {
+      width: 100%;
+      padding: 10px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 0.15s;
+    }
+
+    #remixBtn:hover:not(:disabled) { background: #333; }
+    #remixBtn:disabled { background: #d0d0d0; cursor: not-allowed; }
+
+    /* ── Remix icon button on tiles ── */
+    .result-tile { position: relative; }
+
+    .remix-icon-btn,
+    .place-icon-btn,
+    .copy-icon-btn {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255, 255, 255, 0.92);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+      color: #1a1a1a;
+      padding: 0;
+    }
+
+    .remix-icon-btn { top: 6px; right: 6px; }
+    .place-icon-btn { bottom: 6px; left: 6px; }
+    .copy-icon-btn  { bottom: 6px; left: 38px; }
+
+    .result-tile:hover .remix-icon-btn,
+    .result-tile:hover .place-icon-btn,
+    .result-tile:hover .copy-icon-btn { opacity: 1; }
+
+    .remix-icon-btn:hover,
+    .place-icon-btn:hover { background: #1a1a1a; color: #fff; }
+
+    .copy-icon-btn:hover  { background: #1a1a1a; color: #fff; }
+    .copy-icon-btn.copied { background: #16a34a !important; color: #fff !important; opacity: 1 !important; }
+
+    /* ── Existing styles ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .history-new-wrap { padding: 8px 8px 10px; }
+
+    #newGenPanelBtn {
+      width: 100%;
+      padding: 7px 0;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      font-family: inherit;
+    }
+
+    #newGenPanelBtn:hover { background: #333; }
+
+    .history-item { position: relative; padding-right: 26px; }
+
+    .history-item-delete {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #bbb;
+      font-size: 11px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      opacity: 0;
+      z-index: 2;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+    }
+
+    .history-item::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 80px;
+      height: 100%;
+      background: linear-gradient(to right, transparent, #f5f5f5);
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+      border-radius: 0 6px 6px 0;
+      z-index: 1;
+    }
+
+    .history-item:hover::after { opacity: 1; }
+    .history-item:hover .history-item-delete { opacity: 1; }
+    .history-item-delete:hover { background: #e0e0e0; color: #333; }
+
+    #viewModeBar { display: none; margin-bottom: 14px; }
+    #mainPanel.viewing .generate-ui { display: none; }
+    #mainPanel.viewing #viewModeBar { display: block; }
+
+    #backToGenerateBtn {
+      width: 100%;
+      padding: 7px 0;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      border-radius: 7px;
+      font-size: 11.5px;
+      cursor: pointer;
+      color: #555;
+      font-family: inherit;
+    }
+
+    #backToGenerateBtn:hover { border-color: #1a1a1a; color: #1a1a1a; }
+
+    .logo {
+      width: 26px;
+      height: 26px;
+      background: #1a1a1a;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      letter-spacing: -0.01em;
+    }
+
+    .field-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #aaa;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 88px;
+      padding: 10px 12px;
+      border: 1.5px solid #ebebeb;
+      border-radius: 8px;
+      resize: none;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.55;
+    }
+
+    textarea::placeholder { color: #c0c0c0; }
+    textarea:focus { border-color: #1a1a1a; }
+
+    .variations-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .pill-group { display: flex; gap: 5px; }
+
+    .pill {
+      padding: 5px 13px;
+      border: 1.5px solid #ebebeb;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #888;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+
+    .pill:hover { border-color: #bbb; color: #555; }
+    .pill.active { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+
+    button#generateBtn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 11px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button#generateBtn:hover:not(:disabled) { background: #333; }
+    button#generateBtn:active:not(:disabled) { transform: scale(0.99); }
+    button#generateBtn:disabled { background: #d0d0d0; cursor: not-allowed; }
+
+    /* Suggestion chips */
+    #promptSuggestions {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    #promptSuggestions.visible { display: flex; }
+    .suggestion-chip {
+      padding: 5px 11px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 99px;
+      background: #f7f7f7;
+      font-size: 12px;
+      font-family: inherit;
+      color: #555;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .suggestion-chip:hover { border-color: #bbb; background: #f0f0f0; color: #1a1a1a; }
+
+    /* Button row */
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    button#generateBtn { margin-top: 0; flex: 1; }
+    button#surpriseBtn {
+      flex: 0 0 auto;
+      padding: 11px 14px;
+      background: #fff;
+      color: #1a1a1a;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    button#surpriseBtn:hover:not(:disabled) { border-color: #bbb; background: #f7f7f7; }
+    button#surpriseBtn:active:not(:disabled) { transform: scale(0.99); }
+    button#surpriseBtn:disabled { color: #d0d0d0; border-color: #ebebeb; cursor: not-allowed; }
+
+    #loading {
+      display: none;
+      flex-direction: column;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    #loading.visible { display: flex; }
+
+    .progress-track {
+      height: 2px;
+      background: #f0f0f0;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #1a1a1a;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .step-row { display: flex; align-items: center; gap: 7px; }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      background: #1a1a1a;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.25; }
+    }
+
+    #stepText { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+
+    #results {
+      display: none;
+      margin-top: 16px;
+    }
+
+    #results.visible { display: block; }
+
+    .results-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #aaa;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .results-grid { display: grid; gap: 10px; }
+    .results-grid.cols-1 { grid-template-columns: 1fr; }
+    .results-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+
+    .result-tile { display: flex; flex-direction: column; gap: 6px; }
+
+    .result-tile img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 7px;
+      border: 1.5px solid #ebebeb;
+      display: block;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .result-tile img:hover {
+      border-color: #1a1a1a;
+      box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.12);
+    }
+
+    /* ── History panel ── */
+    #historyPanel {
+      width: 180px;
+      flex-shrink: 0;
+      border-right: 1px solid #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-self: stretch;
+    }
+
+    .history-header {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #aaa;
+      padding: 16px 12px 10px;
+      flex-shrink: 0;
+    }
+
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 6px 8px;
+    }
+
+    .history-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #ccc;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 6px 6px 4px;
+      margin-top: 4px;
+    }
+
+    .history-item {
+      padding: 7px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 1px;
+    }
+
+    .history-item:hover { background: #f5f5f5; }
+    .history-item.active { background: #efefef; }
+
+    .history-item-prompt {
+      font-size: 11.5px;
+      color: #1a1a1a;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .history-item-date {
+      font-size: 10px;
+      color: #bbb;
+      margin-top: 3px;
+    }
+
+    .history-empty {
+      padding: 16px 8px;
+      font-size: 11px;
+      color: #ccc;
+      font-style: italic;
+      text-align: center;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200px 0; }
+      100% { background-position: 200px 0; }
+    }
+
+    .history-skeleton {
+      padding: 7px 8px;
+      margin-bottom: 1px;
+    }
+
+    .history-skeleton-line {
+      border-radius: 4px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e6e6e6 50%, #f0f0f0 75%);
+      background-size: 400px 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .history-skeleton-line.long  { height: 10px; width: 85%; margin-bottom: 5px; }
+    .history-skeleton-line.short { height: 8px;  width: 45%; }
+
+#error {
+      display: none;
+      margin-top: 12px;
+      padding: 9px 12px;
+      background: #fff5f5;
+      border: 1.5px solid #ffd6d6;
+      border-radius: 8px;
+      color: #c0392b;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    #error.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div id="appWrapper">
+
+    <!-- ── Recents panel ── -->
+    <div id="historyPanel">
+      <div class="history-new-wrap">
+        <button id="newGenPanelBtn">+ New Generation</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </div>
+
+    <!-- ── Main panel ── -->
+    <div id="mainPanel">
+      <header>
+        <div class="logo">AI</div>
+        <h1>Illustration Generator</h1>
+      </header>
+
+      <div class="generate-ui">
+        <div class="field-label">Prompt</div>
+        <textarea id="prompt" placeholder="Describe your illustration&#10;e.g. a person working at a desk"></textarea>
+
+        <div id="promptSuggestions"></div>
+
+        <div class="variations-row">
+          <span class="field-label" style="margin:0">Variations</span>
+          <div class="pill-group">
+            <button class="pill active" data-count="1">1</button>
+            <button class="pill" data-count="2">2</button>
+            <button class="pill" data-count="4">4</button>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="generateBtn">Generate</button>
+          <button id="surpriseBtn">✦ Surprise me</button>
+        </div>
+      </div>
+
+
+      <div id="loading">
+        <div class="step-row">
+          <div class="dot"></div>
+          <span id="stepText">Sending your prompt…</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+      </div>
+
+      <div id="results">
+        <div class="results-label" id="resultsLabel">Results — click an illustration to place</div>
+        <div class="results-grid cols-1" id="resultsGrid"></div>
+      </div>
+
+      <div id="error"></div>
+    </div>
+
+    <!-- ── Remix panel ── -->
+    <div id="remixPanel">
+      <div class="remix-panel-header">
+        <span class="remix-panel-title">Remix</span>
+        <button id="closeRemixBtn" title="Close">&#x2715;</button>
+      </div>
+
+      <div>
+        <div class="field-label">Remixing from</div>
+        <img id="remixSourceImg" src="" alt="Source illustration" />
+      </div>
+
+      <div>
+        <div class="remix-strength-header">
+          <div class="field-label" style="margin:0">How different?</div>
+          <span id="strengthValue">5</span>
+        </div>
+        <input type="range" id="strengthSlider" min="1" max="10" value="5" />
+      </div>
+
+      <button id="remixBtn">Remix</button>
+    </div>
+
+  </div>
+
+  <script>
+    var PROXY_URL   = 'https://illustration-proxy.vercel.app/api/generate';
+    var REMIX_URL   = 'https://illustration-proxy.vercel.app/api/remix';
+    var HISTORY_URL = 'https://illustration-proxy.vercel.app/api/history';
+
+    var promptEl    = document.getElementById('prompt');
+    var generateBtn = document.getElementById('generateBtn');
+    var loadingEl   = document.getElementById('loading');
+    var progressBar = document.getElementById('progressBar');
+    var stepTextEl  = document.getElementById('stepText');
+    var resultsEl   = document.getElementById('results');
+    var resultsLabel = document.getElementById('resultsLabel');
+    var resultsGrid = document.getElementById('resultsGrid');
+    var errorEl     = document.getElementById('error');
+
+    var remixPanelEl     = document.getElementById('remixPanel');
+    var remixSourceImg   = document.getElementById('remixSourceImg');
+    var strengthSlider   = document.getElementById('strengthSlider');
+    var strengthValueEl  = document.getElementById('strengthValue');
+    var remixBtn         = document.getElementById('remixBtn');
+    var closeRemixBtn    = document.getElementById('closeRemixBtn');
+    var surpriseBtn      = document.getElementById('surpriseBtn');
+    var suggestionsEl    = document.getElementById('promptSuggestions');
+
+    var SURPRISE_PROMPTS = [
+      'a person at a desk focused on their laptop',
+      'team meeting around a whiteboard',
+      'someone presenting charts to a small group',
+      'a designer sketching wireframes',
+      'two colleagues brainstorming with sticky notes',
+      'a person giving a keynote on stage',
+      'someone reading a book in a cozy chair',
+      'a developer coding late at night',
+      'a small team celebrating a product launch',
+      'a manager reviewing documents at a standing desk',
+      'two people shaking hands after a deal',
+      'a remote worker on a video call',
+      'someone writing in a notebook at a coffee shop',
+      'a team doing a sprint planning session',
+      'a person taking notes during a lecture',
+      'colleagues collaborating around a shared screen',
+      'a founder pitching to investors',
+      'someone onboarding a new team member',
+      'a person organising a calendar on a tablet',
+      'a small team working in an open office',
+    ];
+
+    var selectedCount  = 1;
+    var stepTimers     = [];
+    var currentPrompt  = '';
+    var remixPanelOpen = false;
+    var activeRemixResult = null;
+    var currentUserId  = null;
+    var historyItems   = [];
+    var deletedIds     = new Set();
+    var historyListEl  = document.getElementById('historyList');
+    var mainPanelEl    = document.getElementById('mainPanel');
+
+    // Receive user-id from Figma main thread
+    window.onmessage = function(event) {
+      var msg = event.data && event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === 'user-id') {
+        currentUserId = msg.userId;
+        if (msg.deletedIds) msg.deletedIds.forEach(function(id) { deletedIds.add(id); });
+        fetchHistory(currentUserId);
+      }
+    };
+
+    // --- Variations pill selector ---
+    var pills = document.querySelectorAll('.pill');
+    for (var i = 0; i < pills.length; i++) {
+      pills[i].addEventListener('click', function() {
+        for (var j = 0; j < pills.length; j++) pills[j].classList.remove('active');
+        this.classList.add('active');
+        selectedCount = parseInt(this.getAttribute('data-count'), 10);
+      });
+    }
+
+    // --- Strength slider ---
+    strengthSlider.addEventListener('input', function() {
+      strengthValueEl.textContent = this.value;
+    });
+
+    // --- Remix panel open / close ---
+    function openRemixPanel(result) {
+      activeRemixResult = result;
+      remixSourceImg.src = result.objectUrl;
+      remixPanelEl.classList.add('open');
+      remixPanelOpen = true;
+      autoResize();
+    }
+
+    function closeRemixPanel() {
+      remixPanelEl.classList.remove('open');
+      remixPanelOpen = false;
+      activeRemixResult = null;
+      autoResize();
+    }
+
+    closeRemixBtn.addEventListener('click', closeRemixPanel);
+
+    // --- Resize helpers ---
+    function autoResize() {
+      setTimeout(function() {
+        var w = (remixPanelOpen ? 580 : 360) + 180;
+        var mainH = document.getElementById('mainPanel').scrollHeight;
+        var h = remixPanelOpen
+          ? Math.max(mainH, document.getElementById('remixPanel').scrollHeight)
+          : mainH;
+        parent.postMessage({ pluginMessage: { type: 'resize', width: w, height: h } }, '*');
+      }, 0);
+    }
+
+    // --- Steps / loading ---
+    function setStep(text, progress) {
+      stepTextEl.textContent = text;
+      progressBar.style.width = progress;
+    }
+
+    function startSteps(label) {
+      var STEPS = [
+        { text: 'Sending your prompt…',           progress: '15%', delay: 0     },
+        { text: 'Generating ' + label + '…',      progress: '40%', delay: 3000  },
+        { text: 'Almost there…',                  progress: '75%', delay: 18000 },
+      ];
+      stepTimers = [];
+      STEPS.forEach(function(s) {
+        var t = setTimeout(function() { setStep(s.text, s.progress); }, s.delay);
+        stepTimers.push(t);
+      });
+    }
+
+    function clearSteps() {
+      stepTimers.forEach(function(t) { clearTimeout(t); });
+      stepTimers = [];
+    }
+
+    function setLoading(on, label) {
+      if (on) {
+        progressBar.style.width = '0%';
+        loadingEl.classList.add('visible');
+        generateBtn.disabled = true;
+        surpriseBtn.disabled = true;
+        remixBtn.disabled = true;
+        startSteps(label || '…');
+        autoResize();
+      } else {
+        clearSteps();
+        loadingEl.classList.remove('visible');
+        generateBtn.disabled = false;
+        surpriseBtn.disabled = false;
+        remixBtn.disabled = false;
+        autoResize();
+      }
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.add('visible');
+    }
+
+    function clearError() {
+      errorEl.textContent = '';
+      errorEl.classList.remove('visible');
+    }
+
+    function hideResults() {
+      resultsEl.classList.remove('visible');
+      resultsGrid.innerHTML = '';
+      autoResize();
+    }
+
+    // --- Place image on canvas ---
+    function placeVariation(result) {
+      parent.postMessage(
+        { pluginMessage: { type: 'insert-image', bytes: result.bytes, width: result.width, height: result.height } },
+        '*'
+      );
+    }
+
+    // --- Copy image to clipboard as PNG ---
+    async function copyImageToClipboard(objectUrl, btn) {
+      try {
+        var img = new Image();
+        img.src = objectUrl;
+        await new Promise(function(resolve, reject) { img.onload = resolve; img.onerror = reject; });
+        var canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        var blob = await new Promise(function(resolve) { canvas.toBlob(resolve, 'image/png'); });
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.classList.add('copied');
+        var origTitle = btn.title;
+        btn.title = 'Copied!';
+        setTimeout(function() { btn.classList.remove('copied'); btn.title = origTitle; }, 1500);
+      } catch (e) {
+        console.error('[Copy to clipboard]', e);
+      }
+    }
+
+    // --- Render results grid ---
+    function showResults(results, forceCols) {
+      var cols = forceCols || (selectedCount === 1 ? 'cols-1' : 'cols-2');
+      resultsGrid.className = 'results-grid ' + cols;
+      resultsGrid.innerHTML = '';
+
+      for (var i = 0; i < results.length; i++) {
+        var tile = document.createElement('div');
+        tile.className = 'result-tile';
+
+        if (results[i].error) {
+          var errDiv = document.createElement('div');
+          errDiv.className = 'error-tile';
+          errDiv.textContent = results[i].error;
+          tile.appendChild(errDiv);
+        } else {
+          var img = document.createElement('img');
+          img.src = results[i].objectUrl;
+
+          (function(r) {
+            img.addEventListener('click', function() { placeVariation(r); });
+          })(results[i]);
+
+          // Remix icon button
+          var iconBtn = document.createElement('button');
+          iconBtn.className = 'remix-icon-btn';
+          iconBtn.title = 'Remix this';
+          iconBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+
+          (function(r) {
+            iconBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              openRemixPanel(r);
+            });
+          })(results[i]);
+
+          // Place on canvas icon button
+          var placeBtn = document.createElement('button');
+          placeBtn.className = 'place-icon-btn';
+          placeBtn.title = 'Place on canvas';
+          placeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+          (function(r) {
+            placeBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              placeVariation(r);
+            });
+          })(results[i]);
+
+          // Copy to clipboard icon button
+          var copyBtn = document.createElement('button');
+          copyBtn.className = 'copy-icon-btn';
+          copyBtn.title = 'Copy to clipboard';
+          copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+          (function(r, btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              copyImageToClipboard(r.objectUrl, btn);
+            });
+          })(results[i], copyBtn);
+
+          tile.appendChild(img);
+          tile.appendChild(iconBtn);
+          tile.appendChild(placeBtn);
+          tile.appendChild(copyBtn);
+        }
+
+        resultsGrid.appendChild(tile);
+      }
+
+      resultsEl.classList.add('visible');
+      autoResize();
+    }
+
+    // --- Fetch one variation from generate endpoint ---
+    async function fetchVariation(prompt) {
+      var res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt, negative_prompt: 'no red skin, no red on human body parts, no red fill on faces arms legs or hands', user_id: currentUserId }),
+      });
+
+      var data = await res.json();
+      if (!res.ok) {
+        var err = new Error(data.error || ('Proxy error ' + res.status));
+        err.status = res.status;
+        throw err;
+      }
+
+      var imgRes = await fetch(data.imageUrl);
+      if (!imgRes.ok) throw new Error('Image fetch failed (' + imgRes.status + ')');
+      var buffer = await imgRes.arrayBuffer();
+
+      var bmp = await createImageBitmap(new Blob([buffer]));
+      var w = bmp.width, h = bmp.height;
+      bmp.close();
+
+      var objectUrl = URL.createObjectURL(new Blob([buffer]));
+      var bytes = Array.from(new Uint8Array(buffer));
+
+      return { objectUrl: objectUrl, bytes: bytes, width: w, height: h, imageUrl: data.imageUrl };
+    }
+
+    // --- Fetch one remix result ---
+    async function fetchRemix(imageUrl, prompt, strength) {
+      var res = await fetch(REMIX_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: imageUrl, prompt: prompt, strength: Number(strength) }),
+      });
+
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('Remix proxy error ' + res.status));
+
+      var imgRes = await fetch(data.imageUrl);
+      if (!imgRes.ok) throw new Error('Image fetch failed (' + imgRes.status + ')');
+      var buffer = await imgRes.arrayBuffer();
+
+      var bmp = await createImageBitmap(new Blob([buffer]));
+      var w = bmp.width, h = bmp.height;
+      bmp.close();
+
+      var objectUrl = URL.createObjectURL(new Blob([buffer]));
+      var bytes = Array.from(new Uint8Array(buffer));
+
+      return { objectUrl: objectUrl, bytes: bytes, width: w, height: h, imageUrl: data.imageUrl };
+    }
+
+    // --- History helpers ---
+    function dateBucket(dateStr) {
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var d     = new Date(dateStr); d.setHours(0, 0, 0, 0);
+      var diff  = Math.round((today - d) / 86400000);
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Yesterday';
+      return 'Older';
+    }
+
+    function itemDateLabel(dateStr) {
+      var bucket = dateBucket(dateStr);
+      if (bucket === 'Today' || bucket === 'Yesterday') return bucket;
+      var d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function renderHistory(items) {
+      historyListEl.innerHTML = '';
+
+      if (!items || items.length === 0) {
+        historyListEl.innerHTML = '<div class="history-empty">No history yet</div>';
+        return;
+      }
+
+      var buckets = {};
+      var bucketOrder = ['Today', 'Yesterday', 'Older'];
+      for (var i = 0; i < items.length; i++) {
+        var b = dateBucket(items[i].created_at);
+        if (!buckets[b]) buckets[b] = [];
+        buckets[b].push(items[i]);
+      }
+
+      for (var bi = 0; bi < bucketOrder.length; bi++) {
+        var bucket = bucketOrder[bi];
+        if (!buckets[bucket]) continue;
+
+        for (var ii = 0; ii < buckets[bucket].length; ii++) {
+          (function(item) {
+            var el = document.createElement('div');
+            el.className = 'history-item';
+            el.dataset.id = item.id;
+
+            var promptDiv = document.createElement('div');
+            promptDiv.className = 'history-item-prompt';
+            promptDiv.textContent = item.prompt;
+
+            var dateDiv = document.createElement('div');
+            dateDiv.className = 'history-item-date';
+            dateDiv.textContent = itemDateLabel(item.created_at);
+
+            var delBtn = document.createElement('button');
+            delBtn.className = 'history-item-delete';
+            delBtn.title = 'Remove';
+            delBtn.textContent = '✕';
+            delBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              if (el.classList.contains('active')) resetToFresh();
+              historyItems = historyItems.filter(function(h) { return h.id !== item.id; });
+              deletedIds.add(item.id);
+              parent.postMessage({ pluginMessage: { type: 'delete-history-id', id: item.id } }, '*');
+              el.remove();
+              deleteHistoryItem(item.id);
+            });
+
+            el.appendChild(promptDiv);
+            el.appendChild(dateDiv);
+            el.appendChild(delBtn);
+            el.addEventListener('click', function() { loadHistoryItem(item, el); });
+            historyListEl.appendChild(el);
+          })(buckets[bucket][ii]);
+        }
+      }
+    }
+
+    async function deleteHistoryItem(id) {
+      var url = HISTORY_URL + '/' + id;
+      console.log('[History] DELETE', url);
+      try {
+        var res = await fetch(url, { method: 'DELETE' });
+        console.log('[History] DELETE status:', res.status);
+        if (res.ok) {
+          console.log('[History] DELETE succeeded for id', id);
+        } else {
+          var body = await res.text();
+          console.error('[History] DELETE failed:', res.status, body);
+        }
+      } catch (e) {
+        console.error('[History] DELETE error:', e);
+      }
+    }
+
+    function showHistorySkeletons() {
+      historyListEl.innerHTML = '';
+      for (var i = 0; i < 4; i++) {
+        var item = document.createElement('div');
+        item.className = 'history-skeleton';
+        item.innerHTML = '<div class="history-skeleton-line long"></div><div class="history-skeleton-line short"></div>';
+        historyListEl.appendChild(item);
+      }
+    }
+
+    async function fetchHistory(userId) {
+      if (!userId) return;
+      showHistorySkeletons();
+      try {
+        var res = await fetch(HISTORY_URL + '?user_id=' + encodeURIComponent(userId));
+        if (!res.ok) { renderHistory([]); return; }
+        var fetched = await res.json();
+        historyItems = fetched.filter(function(h) { return !deletedIds.has(h.id); });
+        renderHistory(historyItems);
+      } catch (e) {
+        // silently fail — history is non-critical
+      }
+    }
+
+    async function saveToHistory(prompt, imageUrls) {
+      if (!currentUserId || !imageUrls.length) return;
+      try {
+        var res = await fetch(HISTORY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: currentUserId, prompt: prompt, image_urls: imageUrls }),
+        });
+        if (res.ok) {
+          var newItem = await res.json();
+          if (newItem && newItem.id) {
+            historyItems.unshift(newItem);
+            renderHistory(historyItems);
+          }
+        }
+      } catch (e) {
+        // silently fail
+      }
+    }
+
+    async function loadHistoryItem(item, el) {
+      // Mark active in sidebar
+      var allItems = historyListEl.querySelectorAll('.history-item');
+      for (var i = 0; i < allItems.length; i++) allItems[i].classList.remove('active');
+      el.classList.add('active');
+
+      promptEl.value = item.prompt;
+      currentPrompt = item.prompt;
+      clearError();
+      hideResults();
+      closeRemixPanel();
+
+      if (!item.image_urls || item.image_urls.length === 0) return;
+
+      setLoading(true, 'loading');
+
+      try {
+        var fetches = item.image_urls.map(async function(url) {
+          var imgRes = await fetch(url);
+          if (!imgRes.ok) throw new Error('Image fetch failed');
+          var buffer = await imgRes.arrayBuffer();
+          var bmp = await createImageBitmap(new Blob([buffer]));
+          var w = bmp.width, h = bmp.height;
+          bmp.close();
+          var objectUrl = URL.createObjectURL(new Blob([buffer]));
+          var bytes = Array.from(new Uint8Array(buffer));
+          return { objectUrl: objectUrl, bytes: bytes, width: w, height: h, imageUrl: url };
+        });
+        var results = await Promise.all(fetches);
+        progressBar.style.width = '100%';
+        setLoading(false);
+        resultsLabel.textContent = 'Results — click an illustration to place';
+        var cols = results.length === 1 ? 'cols-1' : 'cols-2';
+        showResults(results, cols);
+        mainPanelEl.classList.add('viewing');
+      } catch (e) {
+        setLoading(false);
+        showError('Could not load history images.');
+      }
+    }
+
+    function classifyError(e) {
+      var status = e.status;
+      var msg = (e.message || '').toLowerCase();
+      if (status === 402 || status === 429 || msg.indexOf('limit') !== -1 || msg.indexOf('quota') !== -1) {
+        return 'billing';
+      }
+      return 'generic';
+    }
+
+    // --- Generate ---
+    async function generate() {
+      activeRemixResult = null;
+      clearError();
+      hideResults();
+
+      var prompt = promptEl.value.trim();
+      if (!prompt) { showError('Please enter a prompt.'); return; }
+
+      currentPrompt = prompt;
+      var variationLabel = selectedCount === 1 ? '1 variation' : selectedCount + ' variations';
+      setLoading(true, variationLabel);
+
+      var calls = [];
+      for (var i = 0; i < selectedCount; i++) {
+        calls.push(
+          fetchVariation(prompt).catch(function(e) {
+            return { error: e.message || 'Failed', errorType: classifyError(e) };
+          })
+        );
+      }
+
+      try {
+        var results = await Promise.all(calls);
+        var successes = results.filter(function(r) { return !r.error; });
+        var failures  = results.filter(function(r) { return  r.error; });
+
+        progressBar.style.width = '100%';
+        setLoading(false);
+
+        if (successes.length > 0) {
+          resultsLabel.textContent = 'Results — click an illustration to place';
+          showResults(successes);
+          saveToHistory(prompt, successes.map(function(r) { return r.imageUrl; }));
+        }
+
+        if (failures.length > 0) {
+          var hasBilling = failures.some(function(r) { return r.errorType === 'billing'; });
+          if (hasBilling) {
+            showError(
+              successes.length + ' of ' + selectedCount + ' illustration' + (selectedCount > 1 ? 's' : '') +
+              ' generated \u2014 Replicate limit reached. Try again in a moment or check your billing at replicate.com'
+            );
+          } else {
+            showError('Something went wrong, please try again.');
+          }
+        }
+
+        if (successes.length === 0 && failures.length === 0) {
+          showError('Something went wrong, please try again.');
+        }
+      } catch (e) {
+        console.error('[AI Illus]', e);
+        showError(e.message || 'Something went wrong.');
+        setLoading(false);
+      }
+    }
+
+    // --- Remix ---
+    async function doRemix() {
+      if (!activeRemixResult) return;
+
+      clearError();
+      hideResults();
+
+      var strength = parseInt(strengthSlider.value, 10);
+      setLoading(true, 'remix');
+
+      try {
+        var result = await fetchRemix(activeRemixResult.imageUrl, currentPrompt, strength);
+        progressBar.style.width = '100%';
+        setLoading(false);
+        resultsLabel.textContent = 'Remix result — click to place';
+        showResults([result], 'cols-1');
+      } catch (e) {
+        console.error('[AI Illus Remix]', e);
+        showError(e.message || 'Remix failed.');
+        setLoading(false);
+      }
+    }
+
+    function resetToFresh() {
+      promptEl.value = '';
+      currentPrompt = '';
+      clearError();
+      hideResults();
+      closeRemixPanel();
+      mainPanelEl.classList.remove('viewing');
+      selectedCount = 1;
+      for (var j = 0; j < pills.length; j++)
+        pills[j].classList.toggle('active', pills[j].getAttribute('data-count') === '1');
+      var allItems = historyListEl.querySelectorAll('.history-item');
+      for (var i = 0; i < allItems.length; i++) allItems[i].classList.remove('active');
+      updateChipsVisibility();
+      promptEl.focus();
+    }
+
+    // --- Suggestion chips ---
+    function updateChipsVisibility() {
+      if (promptEl.value.trim() === '') {
+        suggestionsEl.classList.add('visible');
+      } else {
+        suggestionsEl.classList.remove('visible');
+      }
+    }
+
+    function buildSuggestionChips() {
+      var pool = SURPRISE_PROMPTS.slice();
+      var picks = [];
+      for (var pi = 0; pi < 4 && pool.length > 0; pi++) {
+        var idx = Math.floor(Math.random() * pool.length);
+        picks.push(pool.splice(idx, 1)[0]);
+      }
+      suggestionsEl.innerHTML = '';
+      for (var si = 0; si < picks.length; si++) {
+        var chip = document.createElement('button');
+        chip.className = 'suggestion-chip';
+        chip.textContent = picks[si];
+        chip.addEventListener('click', function() {
+          promptEl.value = this.textContent;
+          suggestionsEl.classList.remove('visible');
+          promptEl.focus();
+        });
+        suggestionsEl.appendChild(chip);
+      }
+    }
+
+    promptEl.addEventListener('input', updateChipsVisibility);
+
+    buildSuggestionChips();
+    updateChipsVisibility();
+
+    // --- Surprise me ---
+    surpriseBtn.addEventListener('click', function() {
+      var pick = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
+      promptEl.value = pick;
+      suggestionsEl.classList.remove('visible');
+      generate();
+    });
+
+    generateBtn.addEventListener('click', generate);
+    remixBtn.addEventListener('click', doRemix);
+    document.getElementById('newGenPanelBtn').addEventListener('click', resetToFresh);
+
+    window.addEventListener('load', autoResize);
+  </script>
+</body>
+</html>

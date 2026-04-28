@@ -1,0 +1,26 @@
+{
+  "name": "AI Illustration Generator",
+  "id": "1611038723703886729",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma",
+    "figjam",
+    "slides",
+    "buzz"
+  ],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://api.replicate.com",
+      "https://replicate.delivery",
+      "https://pbxt.replicate.delivery",
+      "https://r8.delivery",
+      "https://illustration-proxy.vercel.app",
+      "https://igzuvyvdsxiefutgabil.supabase.co"
+    ]
+  }
+}
