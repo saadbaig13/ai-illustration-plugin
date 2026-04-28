@@ -1,8 +1,6 @@
-# AI Illustration Generator — Figma Plugin
+# AI Illustration Figma Plugin
 
 A Figma plugin that generates on-brand illustrations from text prompts using a custom fine-tuned FLUX LoRA model. Type a description, get back illustrations that match your visual style, and place them directly onto the canvas.
-
-Built by a designer with no ML background, using Claude Code to write the code and Replicate to train the model.
 
 ---
 
@@ -37,10 +35,10 @@ Figma Plugin → Vercel Proxy → Replicate (FLUX LoRA) → Supabase Storage →
 
 ## Stack
 
-- **Figma Plugin** — plain HTML/CSS/JS, no framework or build step
-- **Proxy** — Node.js on Vercel (serverless functions)
-- **Model** — FLUX LoRA fine-tuned on Replicate
-- **Database + Storage** — Supabase (free tier)
+- **Figma Plugin**: plain HTML/CSS/JS, no framework or build step
+- **Proxy**: Node.js on Vercel (serverless functions)
+- **Model**: FLUX LoRA fine-tuned on Replicate
+- **Database + Storage**: Supabase (free tier)
 
 ---
 
